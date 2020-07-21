@@ -8,19 +8,21 @@ from matplotlib.tri import Triangulation
 import rospy
 from nav_msgs.msg import OccupancyGrid
 
+
 class MapConverter(object):
     def __init__(self, map_topic, threshold=1, height=2.0):
         self.test_map_pub = rospy.Publisher(
                 "test_map", OccupancyGrid, latch=True, queue_size=1)
-        rospy.Subscriber(map_topic, OccupancyGrid, self.map_callback)
         self.threshold = threshold
         self.height = height
         # Probably there's some way to get trimesh logs to point to ROS
         # logs, but I don't know it.  Uncomment the below if something
         # goes wrong with trimesh to get the logs to print to stdout.
         #trimesh.util.attach_to_log()
+        map_msg = rospy.wait_for_message(map_topic, OccupancyGrid)
+        self.create_map(map_msg)
 
-    def map_callback(self, map_msg):
+    def create_map(self, map_msg):
         rospy.loginfo("Received map")
         map_dims = (map_msg.info.height, map_msg.info.width)
         map_array = np.array(map_msg.data).reshape(map_dims)
@@ -41,11 +43,11 @@ class MapConverter(object):
         if mesh_type == "stl":
             with open(export_dir + "/map.stl", 'w') as f:
                 mesh.export(f, "stl")
-            rospy.loginfo("Exported STL.  You can shut down this node now")
+            rospy.loginfo("Exported STL.")
         elif mesh_type == "dae":
             with open(export_dir + "/map.dae", 'w') as f:
                 f.write(trimesh.exchange.dae.export_collada(mesh))
-            rospy.loginfo("Exported DAE.  You can shut down this node now")
+            rospy.loginfo("Exported DAE.")
 
     def publish_test_map(self, points, metadata, map_header):
         """
@@ -72,7 +74,7 @@ class MapConverter(object):
         image, contours, hierarchy = cv2.findContours(
                 thresh_map, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
         # Using cv2.RETR_CCOMP classifies external contours at top level of
-        # hierarchy and interior contours at second level.  
+        # hierarchy and interior contours at second level.
         # If the whole space is enclosed by walls RETR_EXTERNAL will exclude
         # all interior obstacles e.g. furniture.
         # https://docs.opencv.org/trunk/d9/d8b/tutorial_py_contours_hierarchy.html
@@ -126,12 +128,15 @@ def coords_to_loc(coords, metadata):
     # instead of assuming origin is at z=0 with no rotation wrt map frame
     return np.array([loc_x, loc_y, 0.0])
 
-if __name__ == "__main__":
+
+def main():
     rospy.init_node("map2gazebo")
     map_topic = rospy.get_param("~map_topic", "map")
     occupied_thresh = rospy.get_param("~occupied_thresh", 1)
     box_height = rospy.get_param("~box_height", 2.0)
-    converter = MapConverter(map_topic,
-            threshold=occupied_thresh, height=box_height)
     rospy.loginfo("map2gazebo running")
-    rospy.spin()
+    MapConverter(map_topic, threshold=occupied_thresh, height=box_height)
+
+
+if __name__ == "__main__":
+    main()
