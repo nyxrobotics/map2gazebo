@@ -39,13 +39,13 @@ class MapConverter(object):
         # Export as STL or DAE
         mesh_type = rospy.get_param("~mesh_type", "stl")
         export_dir = rospy.get_param("~export_dir")
-        stl_name = rospy.get_param("~stl_name")
+        file_name = rospy.get_param("~file_name", "map")
         if mesh_type == "stl":
-            with open(export_dir + "/" + stl_name + ".stl", 'w') as f:
+            with open(export_dir + "/" + file_name + ".stl", 'w') as f:
                 mesh.export(f, "stl")
             rospy.loginfo("Exported STL.")
         elif mesh_type == "dae":
-            with open(export_dir + "/map.dae", 'w') as f:
+            with open(export_dir + "/" + file_name + ".dae", 'w') as f:
                 f.write(trimesh.exchange.dae.export_collada(mesh))
             rospy.loginfo("Exported DAE.")
 
