@@ -3,7 +3,6 @@
 import cv2
 import numpy as np
 import trimesh
-from matplotlib.tri import Triangulation
 
 import rospy
 from nav_msgs.msg import OccupancyGrid
@@ -12,7 +11,7 @@ from nav_msgs.msg import OccupancyGrid
 class MapConverter(object):
     def __init__(self, map_topic, threshold=1, height=2.0):
         self.test_map_pub = rospy.Publisher(
-                "test_map", OccupancyGrid, latch=True, queue_size=1)
+            "test_map", OccupancyGrid, latch=True, queue_size=1)
         self.threshold = threshold
         self.height = height
         # Probably there's some way to get trimesh logs to point to ROS
@@ -40,8 +39,9 @@ class MapConverter(object):
         # Export as STL or DAE
         mesh_type = rospy.get_param("~mesh_type", "stl")
         export_dir = rospy.get_param("~export_dir")
+        stl_name = rospy.get_param("~stl_name")
         if mesh_type == "stl":
-            with open(export_dir + "/map.stl", 'w') as f:
+            with open(export_dir + "/" + stl_name + ".stl", 'w') as f:
                 mesh.export(f, "stl")
             rospy.loginfo("Exported STL.")
         elif mesh_type == "dae":
@@ -70,9 +70,9 @@ class MapConverter(object):
         """
         map_array = map_array.astype(np.uint8)
         _, thresh_map = cv2.threshold(
-                map_array, self.threshold, 100, cv2.THRESH_BINARY)
-        image, contours, hierarchy = cv2.findContours(
-                thresh_map, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+            map_array, self.threshold, 100, cv2.THRESH_BINARY)
+        _, contours, hierarchy = cv2.findContours(
+            thresh_map, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
         # Using cv2.RETR_CCOMP classifies external contours at top level of
         # hierarchy and interior contours at second level.
         # If the whole space is enclosed by walls RETR_EXTERNAL will exclude
@@ -84,16 +84,15 @@ class MapConverter(object):
 
     def contour_to_mesh(self, contour, metadata):
         height = np.array([0, 0, self.height])
-        s3 = 3**0.5 / 3.
         meshes = []
         for point in contour:
             x, y = point[0]
             vertices = []
             new_vertices = [
-                    coords_to_loc((x, y), metadata),
-                    coords_to_loc((x, y+1), metadata),
-                    coords_to_loc((x+1, y), metadata),
-                    coords_to_loc((x+1, y+1), metadata)]
+                coords_to_loc((x, y), metadata),
+                coords_to_loc((x, y+1), metadata),
+                coords_to_loc((x+1, y), metadata),
+                coords_to_loc((x+1, y+1), metadata)]
             vertices.extend(new_vertices)
             vertices.extend([v + height for v in new_vertices])
             faces = [[0, 2, 4],
