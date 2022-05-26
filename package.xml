@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>map2gazebo</name>
   <version>0.0.0</version>
   <description>The map2gazebo package</description>
-
   <maintainer email="shilohc@mit.edu">Shiloh Curtis</maintainer>
   <author email="shilohc@mit.edu">Shiloh Curtis</author>
   <license>MIT</license>
-
   <depend>rospy</depend>
   <depend>nav_msgs</depend>
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend condition="$ROS_PYTHON_VERSION == 2">python-pip</build_depend>
+  <build_depend condition="$ROS_PYTHON_VERSION == 3">python3-pip</build_depend>
 </package>
