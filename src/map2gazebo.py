@@ -16,11 +16,21 @@ class MapConverter(object):
         # Probably there's some way to get trimesh logs to point to ROS
         # logs, but I don't know it.  Uncomment the below if something
         # goes wrong with trimesh to get the logs to print to stdout.
-        #trimesh.util.attach_to_log()
+        # trimesh.util.attach_to_log()
         map_msg = rospy.wait_for_message(map_topic, OccupancyGrid)
         self.create_map(map_msg)
 
     def create_map(self, map_msg):
+        # Check that the saving directory exists
+        mesh_type = rospy.get_param("~mesh_type", "stl")
+        export_dir = rospy.get_param("~export_dir")
+        file_name = rospy.get_param("~file_name", "map")
+        if mesh_type not in ["stl", "dae"]:
+            rospy.logerr("Invalid mesh type: {}".format(mesh_type))
+            return
+        if not os.path.exists(export_dir):
+            rospy.logerr(f"Export directory {export_dir} does not exist")
+            return
         rospy.loginfo("Received map")
         map_dims = (map_msg.info.height, map_msg.info.width)
         map_array = np.array(map_msg.data).reshape(map_dims)
@@ -36,9 +46,6 @@ class MapConverter(object):
         mesh = trimesh.util.concatenate(meshes)
 
         # Export as STL or DAE
-        mesh_type = rospy.get_param("~mesh_type", "stl")
-        export_dir = rospy.get_param("~export_dir")
-        file_name = rospy.get_param("~file_name", "map")
         if mesh_type == "stl":
             with open(export_dir + "/" + file_name + ".stl", 'w') as f:
                 mesh.export(f, "stl")
@@ -89,9 +96,9 @@ class MapConverter(object):
             vertices = []
             new_vertices = [
                 coords_to_loc((x, y), metadata),
-                coords_to_loc((x, y+1), metadata),
-                coords_to_loc((x+1, y), metadata),
-                coords_to_loc((x+1, y+1), metadata)]
+                coords_to_loc((x, y + 1), metadata),
+                coords_to_loc((x + 1, y), metadata),
+                coords_to_loc((x + 1, y + 1), metadata)]
             vertices.extend(new_vertices)
             vertices.extend([v + height for v in new_vertices])
             faces = [[0, 2, 4],
@@ -117,6 +124,7 @@ class MapConverter(object):
         # all duplicate faces and remove both of them, since duplicate faces
         # are guaranteed to be internal faces
         return mesh
+
 
 def coords_to_loc(coords, metadata):
     x, y = coords
