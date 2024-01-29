@@ -47,7 +47,7 @@ class MapConverter(object):
 
         # Export as STL or DAE
         if mesh_type == "stl":
-            with open(export_dir + "/" + file_name + ".stl", 'w') as f:
+            with open(export_dir + "/" + file_name + ".stl", 'wb') as f:
                 mesh.export(f, "stl")
             rospy.loginfo("Exported STL.")
         elif mesh_type == "dae":
