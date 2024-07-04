@@ -3,9 +3,11 @@
   <arg name="params_file" default="$(find map2gazebo)/config/defaults.yaml"/>
   <arg name="export_dir" default="$(find map2gazebo)/models/map/"/>
   <arg name="file_name" default="map"/>
+  <arg name="box_height" default="1.0"/>
   <node name="map2gazebo" pkg="map2gazebo" type="map2gazebo.py" output="screen">
+    <rosparam command="load" file="$(arg params_file)"/>
     <param name="export_dir" value="$(arg export_dir)"/>
     <param name="file_name" value="$(arg file_name)"/>
-    <rosparam command="load" file="$(arg params_file)"/>
+    <param name="box_height" value="$(arg box_height)"/>
   </node>
 </launch>
