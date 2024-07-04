@@ -39,19 +39,20 @@ class MapConverter(object):
 
         # set all -1 (unknown) values to 0 (unoccupied)
         map_array[map_array < 0] = 0
-        contours = self.get_occupied_regions(map_array)
-        meshes = [self.contour_to_mesh(c, map_msg.info) for c in contours]
+        # contours = self.get_occupied_regions(map_array)
+        # meshes = [self.contour_to_mesh(c, map_msg.info) for c in contours]
+        # corners = list(np.vstack(contours))
+        # corners = [c[0] for c in corners]
+        # self.publish_test_map(corners, map_msg.info, map_msg.header)
+        meshes = self.image_to_mesh(map_array, map_msg.info)
 
-        corners = list(np.vstack(contours))
-        corners = [c[0] for c in corners]
-        self.publish_test_map(corners, map_msg.info, map_msg.header)
         mesh = trimesh.util.concatenate(meshes)
 
         # Export as STL or DAE
         if mesh_type == "stl":
             with open(export_dir + "/" + file_name + ".stl", 'wb') as f:
                 mesh.export(f, "stl")
-            rospy.loginfo("Exported STL.")
+            rospy.loginfo("Exported STL: " + export_dir + "/" + file_name + ".stl")
         elif mesh_type == "dae":
             with open(export_dir + "/" + file_name + ".dae", 'w') as f:
                 f.write(trimesh.exchange.dae.export_collada(mesh))
@@ -125,6 +126,42 @@ class MapConverter(object):
         # mesh will still have internal faces.  Would be better to get
         # all duplicate faces and remove both of them, since duplicate faces
         # are guaranteed to be internal faces
+        return mesh
+
+    def image_to_mesh(self, image, metadata):
+        height = np.array([0, 0, self.height])
+        meshes = []
+        for y in range(image.shape[0]):
+            for x in range(image.shape[1]):
+                if image[y, x] < self.threshold:
+                    continue
+                vertices = []
+                new_vertices = [
+                    coords_to_loc((x, y), metadata),
+                    coords_to_loc((x, y + 1), metadata),
+                    coords_to_loc((x + 1, y), metadata),
+                    coords_to_loc((x + 1, y + 1), metadata)]
+                vertices.extend(new_vertices)
+                vertices.extend([v + height for v in new_vertices])
+                faces = [[0, 2, 4],
+                         [4, 2, 6],
+                         [1, 2, 0],
+                         [3, 2, 1],
+                         [5, 0, 4],
+                         [1, 0, 5],
+                         [3, 7, 2],
+                         [7, 6, 2],
+                         [7, 4, 6],
+                         [5, 4, 7],
+                         [1, 5, 3],
+                         [7, 3, 5]]
+                mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+                if not mesh.is_volume:
+                    rospy.logdebug("Fixing mesh normals")
+                    mesh.fix_normals()
+                meshes.append(mesh)
+        mesh = trimesh.util.concatenate(meshes)
+        mesh.remove_duplicate_faces()
         return mesh
 
 
