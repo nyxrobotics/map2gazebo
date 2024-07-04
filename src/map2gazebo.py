@@ -130,38 +130,74 @@ class MapConverter(object):
 
     def image_to_mesh(self, image, metadata):
         height = np.array([0, 0, self.height])
-        meshes = []
+        vertices_dict = {}
+        faces_set = set()
+
+        def add_face(v0, v1, v2, v3, height_offset):
+            v0 = tuple(v0 + height_offset)
+            v1 = tuple(v1 + height_offset)
+            v2 = tuple(v2 + height_offset)
+            v3 = tuple(v3 + height_offset)
+            faces_set.add((v0, v1, v2))
+            faces_set.add((v2, v1, v3))
+
         for y in range(image.shape[0]):
             for x in range(image.shape[1]):
                 if image[y, x] < self.threshold:
                     continue
-                vertices = []
-                new_vertices = [
-                    coords_to_loc((x, y), metadata),
-                    coords_to_loc((x, y + 1), metadata),
-                    coords_to_loc((x + 1, y), metadata),
-                    coords_to_loc((x + 1, y + 1), metadata)]
-                vertices.extend(new_vertices)
-                vertices.extend([v + height for v in new_vertices])
-                faces = [[0, 2, 4],
-                         [4, 2, 6],
-                         [1, 2, 0],
-                         [3, 2, 1],
-                         [5, 0, 4],
-                         [1, 0, 5],
-                         [3, 7, 2],
-                         [7, 6, 2],
-                         [7, 4, 6],
-                         [5, 4, 7],
-                         [1, 5, 3],
-                         [7, 3, 5]]
-                mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
-                if not mesh.is_volume:
-                    rospy.logdebug("Fixing mesh normals")
-                    mesh.fix_normals()
-                meshes.append(mesh)
-        mesh = trimesh.util.concatenate(meshes)
+
+                v0 = coords_to_loc((x, y), metadata)
+                v1 = coords_to_loc((x, y + 1), metadata)
+                v2 = coords_to_loc((x + 1, y), metadata)
+                v3 = coords_to_loc((x + 1, y + 1), metadata)
+
+                if (y > 0 and image[y - 1, x] >= self.threshold):  # Bottom neighbor
+                    faces_set.discard((tuple(v0), tuple(v2), tuple(v0 + height)))
+                    faces_set.discard((tuple(v2), tuple(v2 + height), tuple(v0 + height)))
+                else:
+                    add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]))
+
+                if (x > 0 and image[y, x - 1] >= self.threshold):  # Left neighbor
+                    faces_set.discard((tuple(v0), tuple(v1), tuple(v0 + height)))
+                    faces_set.discard((tuple(v1), tuple(v1 + height), tuple(v0 + height)))
+                else:
+                    add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]))
+
+                if (x + 1 < image.shape[1] and image[y, x + 1] >= self.threshold):  # Right neighbor
+                    faces_set.discard((tuple(v2), tuple(v3), tuple(v2 + height)))
+                    faces_set.discard((tuple(v3), tuple(v3 + height), tuple(v2 + height)))
+                else:
+                    add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]))
+
+                if (y + 1 < image.shape[0] and image[y + 1, x] >= self.threshold):  # Top neighbor
+                    faces_set.discard((tuple(v1), tuple(v3), tuple(v1 + height)))
+                    faces_set.discard((tuple(v3), tuple(v3 + height), tuple(v1 + height)))
+                else:
+                    add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]))
+
+                # Top face
+                faces_set.add((tuple(v0 + height), tuple(v2 + height), tuple(v1 + height)))
+                faces_set.add((tuple(v2 + height), tuple(v3 + height), tuple(v1 + height)))
+
+                # Bottom face
+                faces_set.add((tuple(v0), tuple(v1), tuple(v2)))
+                faces_set.add((tuple(v2), tuple(v1), tuple(v3)))
+
+        vertices = set()
+        faces = []
+        for face in faces_set:
+            face_indices = []
+            for vertex in face:
+                if vertex not in vertices_dict:
+                    vertices_dict[vertex] = len(vertices_dict)
+                face_indices.append(vertices_dict[vertex])
+            faces.append(face_indices)
+
+        vertices = np.array([list(vertex) for vertex in vertices_dict])
+        faces = np.array(faces)
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
         mesh.remove_duplicate_faces()
+
         return mesh
 
 
