@@ -73,31 +73,63 @@ class MapConverter(object):
         height = np.array([0, 0, self.height])
         meshes = []
         contours = self.get_occupied_regions(image)
+        faces_set = set()
 
         for contour in contours:
-            faces_set = set()
             vertices_dict = {}
-            for point in contour:
+            num_points = len(contour)
+            for i, point in enumerate(contour):
                 x, y = point[0]
                 v0 = coords_to_loc((x, y), metadata)
                 v1 = coords_to_loc((x, y + 1), metadata)
                 v2 = coords_to_loc((x + 1, y), metadata)
                 v3 = coords_to_loc((x + 1, y + 1), metadata)
 
-                if y == 0 or image[y - 1, x] < self.threshold:  # x+ neighbor
-                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set)
-                if x == image.shape[1] - 1 or image[y, x + 1] < self.threshold:  # y+ neighbor
-                    self.add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]), faces_set)
-                if y == image.shape[0] - 1 or image[y + 1, x] < self.threshold:  # x- neighbor
-                    self.add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]), faces_set, reverse=True)
-                if x == 0 or image[y, x - 1] < self.threshold:  # y- neighbor
-                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                # Initialize wall flags
+                set_wall_x_plus = True
+                set_wall_x_minus = True
+                set_wall_y_plus = True
+                set_wall_y_minus = True
 
-                # Roof face
+                # Check next point
+                if i < num_points - 1:
+                    next_point = contour[i + 1][0]
+                    next_x, next_y = next_point
+                    if next_x > x:  # Moving right
+                        set_wall_x_plus = False
+                    elif next_x < x:  # Moving left
+                        set_wall_x_minus = False
+                    if next_y > y:  # Moving down
+                        set_wall_y_plus = False
+                    elif next_y < y:  # Moving up
+                        set_wall_y_minus = False
+
+                # Check previous point
+                if i > 0:
+                    prev_point = contour[i - 1][0]
+                    prev_x, prev_y = prev_point
+                    if prev_x > x:  # Came from right
+                        set_wall_x_plus = False
+                    elif prev_x < x:  # Came from left
+                        set_wall_x_minus = False
+                    if prev_y > y:  # Came from down
+                        set_wall_y_plus = False
+                    elif prev_y < y:  # Came from up
+                        set_wall_y_minus = False
+
+                # Add faces based on flags
+                if set_wall_x_plus:
+                    self.add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]), faces_set)
+                if set_wall_x_minus:
+                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set)
+                if set_wall_y_plus:
+                    self.add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                if set_wall_y_minus:
+                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+
+                # Add roof and floor faces
                 faces_set.add((tuple(v0 + height), tuple(v2 + height), tuple(v1 + height)))
                 faces_set.add((tuple(v2 + height), tuple(v3 + height), tuple(v1 + height)))
-
-                # Floor face
                 faces_set.add((tuple(v0), tuple(v1), tuple(v2)))
                 faces_set.add((tuple(v2), tuple(v1), tuple(v3)))
 
