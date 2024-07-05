@@ -82,10 +82,10 @@ class MapConverter(object):
             num_points = len(contour)
             for i, point in enumerate(contour):
                 x, y = point[0]
-                v0 = coords_img2world((x - 0.5, y - 0.5), metadata)
+                v0 = coords_img2world((x + 0.5, y + 0.5), metadata)
                 v1 = coords_img2world((x - 0.5, y + 0.5), metadata)
-                v2 = coords_img2world((x + 0.5, y - 0.5), metadata)
-                v3 = coords_img2world((x + 0.5, y + 0.5), metadata)
+                v2 = coords_img2world((x - 0.5, y - 0.5), metadata)
+                v3 = coords_img2world((x + 0.5, y - 0.5), metadata)
 
                 # Initialize wall flags
                 set_wall_x_plus = True
@@ -127,19 +127,19 @@ class MapConverter(object):
 
                 # Add faces based on flags
                 if set_wall_x_plus:
-                    self.add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]), faces_set)
+                    self.add_face(v0 + height, v0, v3, v3 + height, np.array([0, 0, 0]), faces_set)
                 if set_wall_x_minus:
-                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                    self.add_face(v1 + height, v1, v2, v2 + height, np.array([0, 0, 0]), faces_set, reverse=True)
                 if set_wall_y_plus:
-                    self.add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                    self.add_face(v0 + height, v0, v1, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
                 if set_wall_y_minus:
-                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set)
+                    self.add_face(v3 + height, v3, v2, v2 + height, np.array([0, 0, 0]), faces_set)
 
                 # Add roof and floor faces
-                faces_set.add((tuple(v0 + height), tuple(v2 + height), tuple(v1 + height)))
                 faces_set.add((tuple(v2 + height), tuple(v3 + height), tuple(v1 + height)))
-                faces_set.add((tuple(v0), tuple(v1), tuple(v2)))
+                faces_set.add((tuple(v3 + height), tuple(v0 + height), tuple(v1 + height)))
                 faces_set.add((tuple(v2), tuple(v1), tuple(v3)))
+                faces_set.add((tuple(v3), tuple(v1), tuple(v0)))
 
             vertices = set()
             faces = []
@@ -169,10 +169,10 @@ class MapConverter(object):
                 if image[y, x] < self.threshold:
                     continue
 
-                v0 = coords_img2world((x - 0.5, y - 0.5), metadata)
+                v0 = coords_img2world((x + 0.5, y + 0.5), metadata)
                 v1 = coords_img2world((x - 0.5, y + 0.5), metadata)
-                v2 = coords_img2world((x + 0.5, y - 0.5), metadata)
-                v3 = coords_img2world((x + 0.5, y + 0.5), metadata)
+                v2 = coords_img2world((x - 0.5, y - 0.5), metadata)
+                v3 = coords_img2world((x + 0.5, y - 0.5), metadata)
 
                 # Initialize wall flags
                 set_wall_x_plus = y == 0 or image[y - 1, x] < self.threshold
@@ -182,21 +182,21 @@ class MapConverter(object):
 
                 # Add faces based on flags
                 if set_wall_x_plus:
-                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set)
+                    self.add_face(v3 + height, v3, v2, v2 + height, np.array([0, 0, 0]), faces_set)
                 if set_wall_y_plus:
-                    self.add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]), faces_set)
+                    self.add_face(v0 + height, v0, v3, v3 + height, np.array([0, 0, 0]), faces_set)
                 if set_wall_x_minus:
-                    self.add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                    self.add_face(v0 + height, v0, v1, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
                 if set_wall_y_minus:
-                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                    self.add_face(v1 + height, v1, v2, v2 + height, np.array([0, 0, 0]), faces_set, reverse=True)
 
                 # Roof face
-                faces_set.add((tuple(v0 + height), tuple(v2 + height), tuple(v1 + height)))
                 faces_set.add((tuple(v2 + height), tuple(v3 + height), tuple(v1 + height)))
+                faces_set.add((tuple(v3 + height), tuple(v0 + height), tuple(v1 + height)))
 
                 # Floor face
-                faces_set.add((tuple(v0), tuple(v1), tuple(v2)))
                 faces_set.add((tuple(v2), tuple(v1), tuple(v3)))
+                faces_set.add((tuple(v3), tuple(v1), tuple(v0)))
 
         vertices = set()
         faces = []
@@ -221,11 +221,11 @@ class MapConverter(object):
         v2 = tuple(v2 + height_offset)
         v3 = tuple(v3 + height_offset)
         if reverse:
+            faces_set.add((v0, v1, v3))
             faces_set.add((v3, v1, v2))
-            faces_set.add((v2, v1, v0))
         else:
-            faces_set.add((v0, v1, v2))
             faces_set.add((v2, v1, v3))
+            faces_set.add((v3, v1, v0))
 
 
 def coords_img2world(img_pixel, metadata):
