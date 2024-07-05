@@ -101,13 +101,13 @@ class MapConverter(object):
                     vector_y = next_y - y
                     direction = atan2(vector_y, vector_x)
                     if -pi / 4 <= direction < pi / 4:
-                        set_wall_y_plus = False
-                    elif pi / 4 <= direction < 3 * pi / 4:
                         set_wall_x_plus = False
+                    elif pi / 4 <= direction < 3 * pi / 4:
+                        set_wall_y_plus = False
                     elif -3 * pi / 4 <= direction < -pi / 4:
-                        set_wall_x_minus = False
-                    else:
                         set_wall_y_minus = False
+                    else:
+                        set_wall_x_minus = False
 
                 # Check previous point
                 if i > 0:
@@ -116,23 +116,23 @@ class MapConverter(object):
                     vector_y = prev_y - y
                     direction = atan2(vector_y, vector_x)
                     if -pi / 4 <= direction < pi / 4:
-                        set_wall_y_plus = False
-                    elif pi / 4 <= direction < 3 * pi / 4:
                         set_wall_x_plus = False
+                    elif pi / 4 <= direction < 3 * pi / 4:
+                        set_wall_y_plus = False
                     elif -3 * pi / 4 <= direction < -pi / 4:
-                        set_wall_x_minus = False
-                    else:
                         set_wall_y_minus = False
+                    else:
+                        set_wall_x_minus = False
 
                 # Add faces based on flags
                 if set_wall_x_plus:
+                    self.add_face(v0 + height, v0, v1, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                if set_wall_y_plus:
                     self.add_face(v0 + height, v0, v3, v3 + height, np.array([0, 0, 0]), faces_set)
                 if set_wall_x_minus:
-                    self.add_face(v1 + height, v1, v2, v2 + height, np.array([0, 0, 0]), faces_set, reverse=True)
-                if set_wall_y_plus:
-                    self.add_face(v0 + height, v0, v1, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
-                if set_wall_y_minus:
                     self.add_face(v3 + height, v3, v2, v2 + height, np.array([0, 0, 0]), faces_set)
+                if set_wall_y_minus:
+                    self.add_face(v1 + height, v1, v2, v2 + height, np.array([0, 0, 0]), faces_set, reverse=True)
 
                 # Add roof and floor faces
                 faces_set.add((tuple(v2 + height), tuple(v3 + height), tuple(v1 + height)))
@@ -153,7 +153,8 @@ class MapConverter(object):
             vertices = np.array([list(vertex) for vertex in vertices_dict])
             faces = np.array(faces)
             mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
-            mesh.remove_duplicate_faces()
+            # mesh.remove_duplicate_faces()
+            # mesh.remove_degenerate_faces()
             meshes.append(mesh)
 
         return meshes
