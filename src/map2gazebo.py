@@ -136,13 +136,17 @@ class MapConverter(object):
         vertices_dict = {}
         faces_set = set()
 
-        def add_face(v0, v1, v2, v3, height_offset):
+        def add_face(v0, v1, v2, v3, height_offset, reverse=False):
             v0 = tuple(v0 + height_offset)
             v1 = tuple(v1 + height_offset)
             v2 = tuple(v2 + height_offset)
             v3 = tuple(v3 + height_offset)
-            faces_set.add((v0, v1, v2))
-            faces_set.add((v2, v1, v3))
+            if reverse:
+                faces_set.add((v3, v1, v2))
+                faces_set.add((v2, v1, v0))
+            else:
+                faces_set.add((v0, v1, v2))
+                faces_set.add((v2, v1, v3))
 
         for y in range(image.shape[0]):
             for x in range(image.shape[1]):
@@ -155,9 +159,9 @@ class MapConverter(object):
                 v3 = coords_to_loc((x + 1, y + 1), metadata)
 
                 if y == 0 or image[y - 1, x] < self.threshold:  # Down neighbor
-                    add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]))
+                    add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), reverse=True)
                 if x == 0 or image[y, x - 1] < self.threshold:  # Left neighbor
-                    add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]))
+                    add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), reverse=True)
                 if x == image.shape[1] - 1 or image[y, x + 1] < self.threshold:  # Right neighbor
                     add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]))
                 if y == image.shape[0] - 1 or image[y + 1, x] < self.threshold:  # Up neighbor
