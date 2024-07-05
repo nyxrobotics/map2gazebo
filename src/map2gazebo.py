@@ -158,14 +158,14 @@ class MapConverter(object):
                 v2 = coords_to_loc((x + 1, y), metadata)
                 v3 = coords_to_loc((x + 1, y + 1), metadata)
 
-                if y == 0 or image[y - 1, x] < self.threshold:  # Down neighbor
-                    add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), reverse=True)
-                if x == 0 or image[y, x - 1] < self.threshold:  # Left neighbor
-                    add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), reverse=True)
-                if x == image.shape[1] - 1 or image[y, x + 1] < self.threshold:  # Right neighbor
+                if y == 0 or image[y - 1, x] < self.threshold:  # x+ neighbor
+                    add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]))
+                if x == image.shape[1] - 1 or image[y, x + 1] < self.threshold:  # y+ neighbor
                     add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]))
-                if y == image.shape[0] - 1 or image[y + 1, x] < self.threshold:  # Up neighbor
-                    add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]))
+                if y == image.shape[0] - 1 or image[y + 1, x] < self.threshold:  # x- neighbor
+                    add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]), reverse=True)
+                if x == 0 or image[y, x - 1] < self.threshold:  # y- neighbor
+                    add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), reverse=True)
 
                 # Roof face
                 faces_set.add((tuple(v0 + height), tuple(v2 + height), tuple(v1 + height)))
