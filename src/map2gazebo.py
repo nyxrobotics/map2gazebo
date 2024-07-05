@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+from math import atan2
 
 import cv2
 import numpy as np
@@ -95,27 +96,33 @@ class MapConverter(object):
                 if i < num_points - 1:
                     next_point = contour[i + 1][0]
                     next_x, next_y = next_point
-                    if next_x > x:  # Moving right
+                    vector_x = (next_x - x)
+                    vector_y = (next_y - y)
+                    direction = atan2(vector_y, vector_x)
+                    if direction > -np.pi / 4 and direction < np.pi / 4:
                         set_wall_x_plus = False
-                    elif next_x < x:  # Moving left
-                        set_wall_x_minus = False
-                    if next_y > y:  # Moving down
+                    elif direction > np.pi / 4 or direction < np.pi * 3 / 4:
                         set_wall_y_plus = False
-                    elif next_y < y:  # Moving up
+                    elif direction > - np.pi * 3 / 4 and direction < - np.pi / 4:
                         set_wall_y_minus = False
+                    else:
+                        set_wall_x_minus = False
 
                 # Check previous point
                 if i > 0:
                     prev_point = contour[i - 1][0]
                     prev_x, prev_y = prev_point
-                    if prev_x > x:  # Came from right
+                    vector_x = (prev_x - x)
+                    vector_y = (prev_y - y)
+                    direction = atan2(vector_y, vector_x)
+                    if direction > -np.pi / 4 and direction < np.pi / 4:
                         set_wall_x_plus = False
-                    elif prev_x < x:  # Came from left
-                        set_wall_x_minus = False
-                    if prev_y > y:  # Came from down
+                    elif direction > np.pi / 4 or direction < np.pi * 3 / 4:
                         set_wall_y_plus = False
-                    elif prev_y < y:  # Came from up
+                    elif direction > - np.pi * 3 / 4 and direction < - np.pi / 4:
                         set_wall_y_minus = False
+                    else:
+                        set_wall_x_minus = False
 
                 # Add faces based on flags
                 if set_wall_x_plus:
@@ -232,7 +239,7 @@ def main():
     map_topic = rospy.get_param("~map_topic", "map")
     occupied_thresh = rospy.get_param("~occupied_thresh", 1)
     box_height = rospy.get_param("~box_height", 2.0)
-    use_contours = rospy.get_param("~use_contours", False)
+    use_contours = rospy.get_param("~use_contours", True)
     rospy.loginfo("map2gazebo running")
     MapConverter(map_topic, threshold=occupied_thresh, height=box_height, use_contours=use_contours)
 
