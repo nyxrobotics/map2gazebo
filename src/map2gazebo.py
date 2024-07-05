@@ -119,13 +119,13 @@ class MapConverter(object):
 
                 # Add faces based on flags
                 if set_wall_x_plus:
+                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set)
+                if set_wall_y_plus:
                     self.add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]), faces_set)
                 if set_wall_x_minus:
-                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set)
-                if set_wall_y_plus:
                     self.add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]), faces_set, reverse=True)
                 if set_wall_y_minus:
-                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
 
                 # Add roof and floor faces
                 faces_set.add((tuple(v0 + height), tuple(v2 + height), tuple(v1 + height)))
@@ -156,18 +156,6 @@ class MapConverter(object):
         vertices_dict = {}
         faces_set = set()
 
-        def add_face(v0, v1, v2, v3, height_offset, faces_set, reverse=False):
-            v0 = tuple(v0 + height_offset)
-            v1 = tuple(v1 + height_offset)
-            v2 = tuple(v2 + height_offset)
-            v3 = tuple(v3 + height_offset)
-            if reverse:
-                faces_set.add((v3, v1, v2))
-                faces_set.add((v2, v1, v0))
-            else:
-                faces_set.add((v0, v1, v2))
-                faces_set.add((v2, v1, v3))
-
         for y in range(image.shape[0]):
             for x in range(image.shape[1]):
                 if image[y, x] < self.threshold:
@@ -178,14 +166,21 @@ class MapConverter(object):
                 v2 = coords_to_loc((x + 1, y), metadata)
                 v3 = coords_to_loc((x + 1, y + 1), metadata)
 
-                if y == 0 or image[y - 1, x] < self.threshold:  # x+ neighbor
-                    add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set)
-                if x == image.shape[1] - 1 or image[y, x + 1] < self.threshold:  # y+ neighbor
-                    add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]), faces_set)
-                if y == image.shape[0] - 1 or image[y + 1, x] < self.threshold:  # x- neighbor
-                    add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]), faces_set, reverse=True)
-                if x == 0 or image[y, x - 1] < self.threshold:  # y- neighbor
-                    add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                # Initialize wall flags
+                set_wall_x_plus = y == 0 or image[y - 1, x] < self.threshold
+                set_wall_x_minus = y == image.shape[0] - 1 or image[y + 1, x] < self.threshold
+                set_wall_y_plus = x == image.shape[1] - 1 or image[y, x + 1] < self.threshold
+                set_wall_y_minus = x == 0 or image[y, x - 1] < self.threshold
+
+                # Add faces based on flags
+                if set_wall_x_plus:
+                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set)
+                if set_wall_y_plus:
+                    self.add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]), faces_set)
+                if set_wall_x_minus:
+                    self.add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                if set_wall_y_minus:
+                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
 
                 # Roof face
                 faces_set.add((tuple(v0 + height), tuple(v2 + height), tuple(v1 + height)))
@@ -237,7 +232,7 @@ def main():
     map_topic = rospy.get_param("~map_topic", "map")
     occupied_thresh = rospy.get_param("~occupied_thresh", 1)
     box_height = rospy.get_param("~box_height", 2.0)
-    use_contours = rospy.get_param("~use_contours", True)
+    use_contours = rospy.get_param("~use_contours", False)
     rospy.loginfo("map2gazebo running")
     MapConverter(map_topic, threshold=occupied_thresh, height=box_height, use_contours=use_contours)
 
