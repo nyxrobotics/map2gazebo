@@ -97,8 +97,8 @@ class MapConverter(object):
                 if i < num_points - 1:
                     next_point = contour[i + 1][0]
                     next_x, next_y = next_point
-                    vector_x = next_x - x
-                    vector_y = next_y - y
+                    vector_x = next_y - y
+                    vector_y = -(next_x - x)
                     direction = atan2(vector_y, vector_x)
                     if -pi / 4 <= direction < pi / 4:
                         set_wall_y_plus = False
@@ -113,8 +113,8 @@ class MapConverter(object):
                 if i > 0:
                     prev_point = contour[i - 1][0]
                     prev_x, prev_y = prev_point
-                    vector_x = prev_x - x
-                    vector_y = prev_y - y
+                    vector_x = prev_y - y
+                    vector_y = -(prev_x - x)
                     direction = atan2(vector_y, vector_x)
                     if -pi / 4 <= direction < pi / 4:
                         set_wall_y_plus = False
