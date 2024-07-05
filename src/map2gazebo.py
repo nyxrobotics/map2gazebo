@@ -82,10 +82,10 @@ class MapConverter(object):
             num_points = len(contour)
             for i, point in enumerate(contour):
                 x, y = point[0]
-                v0 = coords_to_loc((x, y), metadata)
-                v1 = coords_to_loc((x, y + 1), metadata)
-                v2 = coords_to_loc((x + 1, y), metadata)
-                v3 = coords_to_loc((x + 1, y + 1), metadata)
+                v0 = coords_img2world((x - 0.5, y - 0.5), metadata)
+                v1 = coords_img2world((x - 0.5, y + 0.5), metadata)
+                v2 = coords_img2world((x + 0.5, y - 0.5), metadata)
+                v3 = coords_img2world((x + 0.5, y + 0.5), metadata)
 
                 # Initialize wall flags
                 set_wall_x_plus = True
@@ -169,10 +169,10 @@ class MapConverter(object):
                 if image[y, x] < self.threshold:
                     continue
 
-                v0 = coords_to_loc((x, y), metadata)
-                v1 = coords_to_loc((x, y + 1), metadata)
-                v2 = coords_to_loc((x + 1, y), metadata)
-                v3 = coords_to_loc((x + 1, y + 1), metadata)
+                v0 = coords_img2world((x - 0.5, y - 0.5), metadata)
+                v1 = coords_img2world((x - 0.5, y + 0.5), metadata)
+                v2 = coords_img2world((x + 0.5, y - 0.5), metadata)
+                v3 = coords_img2world((x + 0.5, y + 0.5), metadata)
 
                 # Initialize wall flags
                 set_wall_x_plus = y == 0 or image[y - 1, x] < self.threshold
@@ -228,11 +228,11 @@ class MapConverter(object):
             faces_set.add((v2, v1, v3))
 
 
-def coords_to_loc(coords, metadata):
-    x, y = coords
-    loc_x = x * metadata.resolution + metadata.origin.position.x
-    loc_y = y * metadata.resolution + metadata.origin.position.y
-    return np.array([loc_x, loc_y, 0.0])
+def coords_img2world(img_pixel, metadata):
+    x_img, y_img = img_pixel
+    x_world = (y_img * metadata.resolution + metadata.origin.position.y)
+    y_world = -(x_img * metadata.resolution + metadata.origin.position.x)
+    return np.array([x_world, y_world, 0.0])
 
 
 def main():
@@ -240,7 +240,7 @@ def main():
     map_topic = rospy.get_param("~map_topic", "map")
     occupied_thresh = rospy.get_param("~occupied_thresh", 1)
     box_height = rospy.get_param("~box_height", 2.0)
-    use_contours = rospy.get_param("~use_contours", True)
+    use_contours = rospy.get_param("~use_contours", False)
     rospy.loginfo("map2gazebo running")
     MapConverter(map_topic, threshold=occupied_thresh, height=box_height, use_contours=use_contours)
 
