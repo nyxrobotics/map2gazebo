@@ -154,35 +154,20 @@ class MapConverter(object):
                 v2 = coords_to_loc((x + 1, y), metadata)
                 v3 = coords_to_loc((x + 1, y + 1), metadata)
 
-                if (y > 0 and image[y - 1, x] >= self.threshold):  # Bottom neighbor
-                    faces_set.discard((tuple(v0), tuple(v2), tuple(v0 + height)))
-                    faces_set.discard((tuple(v2), tuple(v2 + height), tuple(v0 + height)))
-                else:
+                if y == 0 or image[y - 1, x] < self.threshold:  # Down neighbor
                     add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]))
-
-                if (x > 0 and image[y, x - 1] >= self.threshold):  # Left neighbor
-                    faces_set.discard((tuple(v0), tuple(v1), tuple(v0 + height)))
-                    faces_set.discard((tuple(v1), tuple(v1 + height), tuple(v0 + height)))
-                else:
+                if x == 0 or image[y, x - 1] < self.threshold:  # Left neighbor
                     add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]))
-
-                if (x + 1 < image.shape[1] and image[y, x + 1] >= self.threshold):  # Right neighbor
-                    faces_set.discard((tuple(v2), tuple(v3), tuple(v2 + height)))
-                    faces_set.discard((tuple(v3), tuple(v3 + height), tuple(v2 + height)))
-                else:
+                if x == image.shape[1] - 1 or image[y, x + 1] < self.threshold:  # Right neighbor
                     add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]))
-
-                if (y + 1 < image.shape[0] and image[y + 1, x] >= self.threshold):  # Top neighbor
-                    faces_set.discard((tuple(v1), tuple(v3), tuple(v1 + height)))
-                    faces_set.discard((tuple(v3), tuple(v3 + height), tuple(v1 + height)))
-                else:
+                if y == image.shape[0] - 1 or image[y + 1, x] < self.threshold:  # Up neighbor
                     add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]))
 
-                # Top face
+                # Roof face
                 faces_set.add((tuple(v0 + height), tuple(v2 + height), tuple(v1 + height)))
                 faces_set.add((tuple(v2 + height), tuple(v3 + height), tuple(v1 + height)))
 
-                # Bottom face
+                # Floor face
                 faces_set.add((tuple(v0), tuple(v1), tuple(v2)))
                 faces_set.add((tuple(v2), tuple(v1), tuple(v3)))
 
