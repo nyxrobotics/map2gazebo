@@ -2,6 +2,7 @@
 
 import os
 from math import atan2
+from math import pi
 
 import cv2
 import numpy as np
@@ -96,43 +97,43 @@ class MapConverter(object):
                 if i < num_points - 1:
                     next_point = contour[i + 1][0]
                     next_x, next_y = next_point
-                    vector_x = (next_x - x)
-                    vector_y = (next_y - y)
+                    vector_x = next_x - x
+                    vector_y = next_y - y
                     direction = atan2(vector_y, vector_x)
-                    if direction > -np.pi / 4 and direction < np.pi / 4:
-                        set_wall_x_plus = False
-                    elif direction > np.pi / 4 or direction < np.pi * 3 / 4:
+                    if -pi / 4 <= direction < pi / 4:
                         set_wall_y_plus = False
-                    elif direction > - np.pi * 3 / 4 and direction < - np.pi / 4:
-                        set_wall_y_minus = False
-                    else:
+                    elif pi / 4 <= direction < 3 * pi / 4:
+                        set_wall_x_plus = False
+                    elif -3 * pi / 4 <= direction < -pi / 4:
                         set_wall_x_minus = False
+                    else:
+                        set_wall_y_minus = False
 
                 # Check previous point
                 if i > 0:
                     prev_point = contour[i - 1][0]
                     prev_x, prev_y = prev_point
-                    vector_x = (prev_x - x)
-                    vector_y = (prev_y - y)
+                    vector_x = prev_x - x
+                    vector_y = prev_y - y
                     direction = atan2(vector_y, vector_x)
-                    if direction > -np.pi / 4 and direction < np.pi / 4:
-                        set_wall_x_plus = False
-                    elif direction > np.pi / 4 or direction < np.pi * 3 / 4:
+                    if -pi / 4 <= direction < pi / 4:
                         set_wall_y_plus = False
-                    elif direction > - np.pi * 3 / 4 and direction < - np.pi / 4:
-                        set_wall_y_minus = False
-                    else:
+                    elif pi / 4 <= direction < 3 * pi / 4:
+                        set_wall_x_plus = False
+                    elif -3 * pi / 4 <= direction < -pi / 4:
                         set_wall_x_minus = False
+                    else:
+                        set_wall_y_minus = False
 
                 # Add faces based on flags
                 if set_wall_x_plus:
-                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set)
-                if set_wall_y_plus:
                     self.add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]), faces_set)
                 if set_wall_x_minus:
+                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set)
+                if set_wall_y_plus:
                     self.add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]), faces_set, reverse=True)
                 if set_wall_y_minus:
-                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set, reverse=True)
 
                 # Add roof and floor faces
                 faces_set.add((tuple(v0 + height), tuple(v2 + height), tuple(v1 + height)))
