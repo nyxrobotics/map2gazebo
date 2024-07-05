@@ -129,11 +129,11 @@ class MapConverter(object):
                 if set_wall_x_plus:
                     self.add_face(v2, v3, v2 + height, v3 + height, np.array([0, 0, 0]), faces_set)
                 if set_wall_x_minus:
-                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set)
+                    self.add_face(v0, v1, v0 + height, v1 + height, np.array([0, 0, 0]), faces_set, reverse=True)
                 if set_wall_y_plus:
                     self.add_face(v1, v3, v1 + height, v3 + height, np.array([0, 0, 0]), faces_set, reverse=True)
                 if set_wall_y_minus:
-                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set, reverse=True)
+                    self.add_face(v0, v2, v0 + height, v2 + height, np.array([0, 0, 0]), faces_set)
 
                 # Add roof and floor faces
                 faces_set.add((tuple(v0 + height), tuple(v2 + height), tuple(v1 + height)))
