@@ -10,11 +10,12 @@ from nav_msgs.msg import OccupancyGrid
 
 
 class MapConverter(object):
-    def __init__(self, map_topic, threshold=1, height=2.0):
+    def __init__(self, map_topic, threshold=1, height=2.0, use_contours=False):
         self.test_map_pub = rospy.Publisher(
             "test_map", OccupancyGrid, latch=True, queue_size=1)
         self.threshold = threshold
         self.height = height
+        self.use_contours = use_contours
         # Probably there's some way to get trimesh logs to point to ROS
         # logs, but I don't know it.  Uncomment the below if something
         # goes wrong with trimesh to get the logs to print to stdout.
@@ -39,12 +40,14 @@ class MapConverter(object):
 
         # set all -1 (unknown) values to 0 (unoccupied)
         map_array[map_array < 0] = 0
-        # contours = self.get_occupied_regions(map_array)
-        # meshes = [self.contour_to_mesh(c, map_msg.info) for c in contours]
-        # corners = list(np.vstack(contours))
-        # corners = [c[0] for c in corners]
-        # self.publish_test_map(corners, map_msg.info, map_msg.header)
-        meshes = self.image_to_mesh(map_array, map_msg.info)
+        if self.use_contours:
+            contours = self.get_occupied_regions(map_array)
+            meshes = [self.contour_to_mesh(c, map_msg.info) for c in contours]
+            corners = list(np.vstack(contours))
+            corners = [c[0] for c in corners]
+            self.publish_test_map(corners, map_msg.info, map_msg.header)
+        else:
+            meshes = self.image_pixels_to_mesh(map_array, map_msg.info)
 
         mesh = trimesh.util.concatenate(meshes)
 
@@ -128,7 +131,7 @@ class MapConverter(object):
         # are guaranteed to be internal faces
         return mesh
 
-    def image_to_mesh(self, image, metadata):
+    def image_pixels_to_mesh(self, image, metadata):
         height = np.array([0, 0, self.height])
         vertices_dict = {}
         faces_set = set()
@@ -215,8 +218,9 @@ def main():
     map_topic = rospy.get_param("~map_topic", "map")
     occupied_thresh = rospy.get_param("~occupied_thresh", 1)
     box_height = rospy.get_param("~box_height", 2.0)
+    use_contours = rospy.get_param("~use_contours", False)
     rospy.loginfo("map2gazebo running")
-    MapConverter(map_topic, threshold=occupied_thresh, height=box_height)
+    MapConverter(map_topic, threshold=occupied_thresh, height=box_height, use_contours=use_contours)
 
 
 if __name__ == "__main__":
