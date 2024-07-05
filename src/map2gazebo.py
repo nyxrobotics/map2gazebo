@@ -81,11 +81,12 @@ class MapConverter(object):
             vertices_dict = {}
             num_points = len(contour)
             for i, point in enumerate(contour):
-                x, y = point[0]
-                v0 = coords_img2world((x + 0.5, y + 0.5), metadata)
-                v1 = coords_img2world((x - 0.5, y + 0.5), metadata)
-                v2 = coords_img2world((x - 0.5, y - 0.5), metadata)
-                v3 = coords_img2world((x + 0.5, y - 0.5), metadata)
+                x_img, y_img = point[0]
+                x, y, z = coords_img2world(point[0], metadata)
+                v0 = coords_img2world((x_img + 0.5, y_img + 0.5), metadata)
+                v1 = coords_img2world((x_img - 0.5, y_img + 0.5), metadata)
+                v2 = coords_img2world((x_img - 0.5, y_img - 0.5), metadata)
+                v3 = coords_img2world((x_img + 0.5, y_img - 0.5), metadata)
 
                 # Initialize wall flags
                 set_wall_x_plus = True
@@ -95,10 +96,9 @@ class MapConverter(object):
 
                 # Check next point
                 if i < num_points - 1:
-                    next_point = contour[i + 1][0]
-                    next_x, next_y = next_point
-                    vector_x = next_y - y
-                    vector_y = -(next_x - x)
+                    next_x, next_y, next_z = coords_img2world(contour[i + 1][0], metadata)
+                    vector_x = next_x - x
+                    vector_y = next_y - y
                     direction = atan2(vector_y, vector_x)
                     if -pi / 4 <= direction < pi / 4:
                         set_wall_y_plus = False
@@ -111,10 +111,9 @@ class MapConverter(object):
 
                 # Check previous point
                 if i > 0:
-                    prev_point = contour[i - 1][0]
-                    prev_x, prev_y = prev_point
-                    vector_x = prev_y - y
-                    vector_y = -(prev_x - x)
+                    prev_x, prev_y, prev_z = coords_img2world(contour[i - 1][0], metadata)
+                    vector_x = prev_x - x
+                    vector_y = prev_y - y
                     direction = atan2(vector_y, vector_x)
                     if -pi / 4 <= direction < pi / 4:
                         set_wall_y_plus = False
@@ -164,21 +163,21 @@ class MapConverter(object):
         vertices_dict = {}
         faces_set = set()
 
-        for y in range(image.shape[0]):
-            for x in range(image.shape[1]):
-                if image[y, x] < self.threshold:
+        for y_img in range(image.shape[0]):
+            for x_img in range(image.shape[1]):
+                if image[y_img, x_img] < self.threshold:
                     continue
-
-                v0 = coords_img2world((x + 0.5, y + 0.5), metadata)
-                v1 = coords_img2world((x - 0.5, y + 0.5), metadata)
-                v2 = coords_img2world((x - 0.5, y - 0.5), metadata)
-                v3 = coords_img2world((x + 0.5, y - 0.5), metadata)
+                x, y, z = coords_img2world((x_img, y_img), metadata)
+                v0 = coords_img2world((x_img + 0.5, y_img + 0.5), metadata)
+                v1 = coords_img2world((x_img - 0.5, y_img + 0.5), metadata)
+                v2 = coords_img2world((x_img - 0.5, y_img - 0.5), metadata)
+                v3 = coords_img2world((x_img + 0.5, y_img - 0.5), metadata)
 
                 # Initialize wall flags
-                set_wall_x_plus = y == 0 or image[y - 1, x] < self.threshold
-                set_wall_x_minus = y == image.shape[0] - 1 or image[y + 1, x] < self.threshold
-                set_wall_y_plus = x == image.shape[1] - 1 or image[y, x + 1] < self.threshold
-                set_wall_y_minus = x == 0 or image[y, x - 1] < self.threshold
+                set_wall_x_plus = y_img == 0 or image[y_img - 1, x_img] < self.threshold
+                set_wall_x_minus = y_img == image.shape[0] - 1 or image[y_img + 1, x_img] < self.threshold
+                set_wall_y_plus = x_img == image.shape[1] - 1 or image[y_img, x_img + 1] < self.threshold
+                set_wall_y_minus = x_img == 0 or image[y_img, x_img - 1] < self.threshold
 
                 # Add faces based on flags
                 if set_wall_x_plus:
@@ -230,8 +229,8 @@ class MapConverter(object):
 
 def coords_img2world(img_pixel, metadata):
     x_img, y_img = img_pixel
-    x_world = (y_img * metadata.resolution + metadata.origin.position.y)
-    y_world = -(x_img * metadata.resolution + metadata.origin.position.x)
+    x_world = ((y_img + 0.5) * metadata.resolution + metadata.origin.position.y)
+    y_world = -((x_img + 0.5) * metadata.resolution + metadata.origin.position.x)
     return np.array([x_world, y_world, 0.0])
 
 
